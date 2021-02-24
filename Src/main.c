@@ -82,7 +82,7 @@ DMA_HandleTypeDef hdma_uart5_tx;
 	int j=0;
 	static int32_t get_encofl = 0,get_encofr = 0,get_encobl = 0,get_encobr = 0;
 	float vvl = 0.00, vvr = 0.00;
-	int16_t pulfl = 0, pulfr = 0, pulbr = 0, pulbl = 0;
+	float pulfl = 0, pulfr = 0, pulbr = 0, pulbl = 0;
 	
 	PIDControl pidfl, pidfr, pidbr, pidbl;
 	
@@ -97,10 +97,10 @@ DMA_HandleTypeDef hdma_uart5_tx;
 		float v;
 		float kp,ki,kd;
 	}Wheelselect;
-	Wheelselect whfl = {.ppr = 1500, .vmax = 0.209, .vmin = 0.00, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0},
-							whfr = {.ppr = 1500, .vmax = 0.213, .vmin = 0.00, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0},
-							whbr = {.ppr = 1550, .vmax = 0.237, .vmin = 0.00, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0},
-							whbl = {.ppr = 1410, .vmax = 0.246, .vmin = 0.00, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0};
+	Wheelselect whfl = {.ppr = 1500, .vmax = 0.209, .vmin = -0.209, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0},
+							whfr = {.ppr = 1500, .vmax = 0.213, .vmin = -0.213, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0},
+							whbr = {.ppr = 1550, .vmax = 0.237, .vmin = -0.237, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0},
+							whbl = {.ppr = 1410, .vmax = 0.246, .vmin = -0.246, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0};
 	
 /* USER CODE END PV */
 
@@ -287,8 +287,9 @@ int main(void)
 			PIDTuningsSet(&pidfl,0.08,0.02,0);
 			PIDTuningsSet(&pidfr,0.08,0.02,0);
 			PIDTuningsSet(&pidbr,1.4,4.02,0);
-			PIDTuningsSet(&pidbl,1.79,5.7,0.0017);
-			vvr = 0.12;
+			PIDTuningsSet(&pidbl,0.76,40,0.0018);
+			
+			vvl = 0.07;
 			
 			//PID for Front Left Wheel
 			PIDInputSet(&pidfl,whfl.v);
@@ -306,7 +307,15 @@ int main(void)
 			PIDInputSet(&pidbl,whbl.v);
 			PIDSetpointSet(&pidbl,vvl);
 			PIDCompute(&pidbl);
-			pulbl=PIDOutputGet(&pidbl)/(whbl.vmax)*(pulmax-pulmin)+pulmin;
+//			if(vvl>=0.022){pidbl.output+=(pidbl.output-0.06)/1.75;}
+//			else if(vvl>=0.025 && vvl<0.04){pidbl.output-=0.01;}
+//			else{pidbl.output = 0;}
+			pulbl=PIDOutputGet(&pidbl)/(whbl.vmax)*4096;
+			if((pulbl)>4095){
+				pulbl = 4095;
+			}else if(pulbl <-4095){ 
+				pulbl = -4095;
+			}
 			
 			//PID for Back Right Wheel
 			PIDInputSet(&pidbr,whbr.v);
@@ -322,7 +331,7 @@ int main(void)
 		PCA9685_SetServoAngle(1, set[1]);
 		PCA9685_SetServoAngle(2, set[2]);
 		PCA9685_SetServoAngle(3, set[3]);
-		PCA9685_SetServoAngle(4, set[4]);
+		PCA9685_SetServoAngle(4, 0);
 		PCA9685_SetServoAngle(5, set[5]);
 //		for (uint8_t Angle = 0; Angle < 90; Angle++) {
 //		  PCA9685_SetServoAngle(5, Angle);
@@ -330,16 +339,28 @@ int main(void)
 		/**/
 		
 		/*xuat pwm cho 4 dong co*/
-		PCA9685_SetPwmFrequency(1000);
+		PCA9685_SetPwmFrequency(4000);
+		
 		PCA9685_SetPwm(8, 0, 0);
-		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_7,GPIO_PIN_RESET);
+		if(pulfl >= 0){
+			HAL_GPIO_WritePin(GPIOC,GPIO_PIN_7,GPIO_PIN_RESET);
+		}else HAL_GPIO_WritePin(GPIOC,GPIO_PIN_7,GPIO_PIN_SET);
+		
 		PCA9685_SetPwm(9, 0, 0);
-		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_9,GPIO_PIN_RESET);
-	  PCA9685_SetPwm(10, 0, 0);
-		HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_RESET);
-		PCA9685_SetPwm(11, 0, 0);	
-		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_11,GPIO_PIN_RESET);
-    /**/
+		if(pulfr >= 0){
+			HAL_GPIO_WritePin(GPIOC,GPIO_PIN_9,GPIO_PIN_RESET);
+	  }else HAL_GPIO_WritePin(GPIOC,GPIO_PIN_9,GPIO_PIN_SET);
+		
+		PCA9685_SetPwm(10, 0, 0);
+		if(pulbr >= 0){
+			HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_RESET);
+		}else HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_SET);
+		
+//		PCA9685_SetPwm(11, 0, (uint16_t)__fabs(pulbl));	
+//		if(pulbl >= 0){
+//			HAL_GPIO_WritePin(GPIOC,GPIO_PIN_11,GPIO_PIN_RESET);
+//    }else HAL_GPIO_WritePin(GPIOC,GPIO_PIN_11,GPIO_PIN_SET);
+		/**/
 		
 		/* USER CODE END WHILE */
 
@@ -751,11 +772,11 @@ void inversespeed(void)
 	float omegac_set = (float)bset[1]/100.00;
 	vvl = (2*vc_set-omegac_set*len)/2;
 	vvr = (2*vc_set+omegac_set*len)/2;
-	if(vvl>0.202){
-		vvl = 0.202;
+	if(vvl>0.205){
+		vvl = 0.205;
 	}
-	if(vvr>0.202){
-		vvr = 0.202;
+	if(vvr>0.205){
+		vvr = 0.205;
 	}
 }
 

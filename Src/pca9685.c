@@ -163,7 +163,7 @@ PCA9685_STATUS PCA9685_SetPin(uint8_t Channel, uint16_t Value, uint8_t Invert)
 //	uint16_t a = Value;
 //	for(int i =0; i<= a; i++){
 //		Value = oi
-  if(Value > 4095) Value = 4095;
+  if(Value > 4095) Value = 4094;
 
   if (Invert) {
     if (Value == 0) {
