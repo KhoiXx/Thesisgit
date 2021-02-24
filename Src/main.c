@@ -52,7 +52,7 @@
 //#define vmax 30.00
 //#define vmin -30.00
 #define pulmax 4095
-#define pulmin 200
+#define pulmin 10
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -97,10 +97,10 @@ DMA_HandleTypeDef hdma_uart5_tx;
 		float v;
 		float kp,ki,kd;
 	}Wheelselect;
-	Wheelselect whfl = {.ppr = 1500, .vmax = 0.173, .vmin = 0.00, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0},
-							whfr = {.ppr = 1500, .vmax = 0.177, .vmin = 0.00, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0},
-							whbr = {.ppr = 1550, .vmax = 0.00, .vmin = 0.00, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0},
-							whbl = {.ppr = 1410, .vmax = 0.00, .vmin = 0.00, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0};
+	Wheelselect whfl = {.ppr = 1500, .vmax = 0.209, .vmin = 0.00, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0},
+							whfr = {.ppr = 1500, .vmax = 0.213, .vmin = 0.00, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0},
+							whbr = {.ppr = 1550, .vmax = 0.237, .vmin = 0.00, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0},
+							whbl = {.ppr = 1410, .vmax = 0.246, .vmin = 0.00, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0};
 	
 /* USER CODE END PV */
 
@@ -283,6 +283,13 @@ int main(void)
 			//tinh van toc dat
 			inversespeed();
 			
+			//Dat thong so PID
+			PIDTuningsSet(&pidfl,0.08,0.02,0);
+			PIDTuningsSet(&pidfr,0.08,0.02,0);
+			PIDTuningsSet(&pidbr,1.4,4.02,0);
+			PIDTuningsSet(&pidbl,1.79,5.7,0.0017);
+			vvr = 0.12;
+			
 			//PID for Front Left Wheel
 			PIDInputSet(&pidfl,whfl.v);
 			PIDSetpointSet(&pidfl,vvl);
@@ -307,12 +314,11 @@ int main(void)
 			PIDCompute(&pidbr);
 			pulbr=PIDOutputGet(&pidbr)/(whbr.vmax)*(pulmax-pulmin)+pulmin;
 			
-			set[2]=0;
 		}
 		
 		/*xuat pwm cho servo robot arm*/
 		PCA9685_SetPwmFrequency(48);
-		PCA9685_SetServoAngle(0, 90);
+		PCA9685_SetServoAngle(0, set[0]);
 		PCA9685_SetServoAngle(1, set[1]);
 		PCA9685_SetServoAngle(2, set[2]);
 		PCA9685_SetServoAngle(3, set[3]);
@@ -325,13 +331,13 @@ int main(void)
 		
 		/*xuat pwm cho 4 dong co*/
 		PCA9685_SetPwmFrequency(1000);
-		PCA9685_SetPwm(8, 0, 250);
+		PCA9685_SetPwm(8, 0, 0);
 		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_7,GPIO_PIN_RESET);
-		PCA9685_SetPwm(9, 0, 250);
+		PCA9685_SetPwm(9, 0, 0);
 		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_9,GPIO_PIN_RESET);
-	  PCA9685_SetPwm(10, 0, 300);
+	  PCA9685_SetPwm(10, 0, 0);
 		HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_RESET);
-		PCA9685_SetPwm(11, 0, 300);	
+		PCA9685_SetPwm(11, 0, 0);	
 		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_11,GPIO_PIN_RESET);
     /**/
 		
@@ -745,6 +751,12 @@ void inversespeed(void)
 	float omegac_set = (float)bset[1]/100.00;
 	vvl = (2*vc_set-omegac_set*len)/2;
 	vvr = (2*vc_set+omegac_set*len)/2;
+	if(vvl>0.202){
+		vvl = 0.202;
+	}
+	if(vvr>0.202){
+		vvr = 0.202;
+	}
 }
 
 /* USER CODE END 4 */

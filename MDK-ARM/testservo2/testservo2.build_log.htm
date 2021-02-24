@@ -27,7 +27,36 @@ Project File Date:  02/20/2021
 <h2>Output:</h2>
 *** Using Compiler 'V5.06 update 5 (build 528)', folder: 'C:\Keil_v5\ARM\ARMCC\Bin'
 Build target 'testservo2'
-"testservo2\testservo2.axf" - 0 Error(s), 0 Warning(s).
+compiling main.c...
+../Src/main.c(237): warning:  #177-D: variable "temp1"  was declared but never referenced
+  	static float temp1;
+../Src/main.c(750): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+  	float vc_set = (float)bset[0]/100000.00000;
+../Src/main.c(751): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+  	float omegac_set = (float)bset[1]/100.00;
+../Src/main.c(752): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+  	vvl = (2*vc_set-omegac_set*
+en)/2;
+../Src/main.c(753): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+  	vvr = (2*vc_set+omegac_set*
+en)/2;
+../Src/main.c(754): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+  	if(vvl>0.202){
+../Src/main.c(757): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+  	if(vvr>0.202){
+../Src/main.c(83): warning:  #177-D: variable "get_encofl"  was declared but never referenced
+  	static int32_t get_encofl = 0,get_encofr = 0,get_encobl = 0,get_encobr = 0;
+../Src/main.c(83): warning:  #177-D: variable "get_encofr"  was declared but never referenced
+  	static int32_t get_encofl = 0,get_encofr = 0,get_encobl = 0,get_encobr = 0;
+../Src/main.c(83): warning:  #177-D: variable "get_encobl"  was declared but never referenced
+  	static int32_t get_encofl = 0,get_encofr = 0,get_encobl = 0,get_encobr = 0;
+../Src/main.c(83): warning:  #177-D: variable "get_encobr"  was declared but never referenced
+  	static int32_t get_encofl = 0,get_encofr = 0,get_encobl = 0,get_encobr = 0;
+../Src/main.c: 11 warnings, 0 errors
+linking...
+Program Size: Code=16456 RO-data=520 RW-data=232 ZI-data=1920  
+FromELF: creating hex file...
+"testservo2\testservo2.axf" - 0 Error(s), 11 Warning(s).
 
 <h2>Software Packages used:</h2>
 
@@ -50,7 +79,7 @@ Package Vendor: Keil
 <h2>Collection of Component Files used:</h2>
 
    * Component: ARM::CMSIS:CORE:5.0.1
-Build Time Elapsed:  00:00:00
+Build Time Elapsed:  00:00:02
 </pre>
 </body>
 </html>
