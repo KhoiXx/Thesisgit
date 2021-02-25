@@ -112,6 +112,7 @@ PCA9685_STATUS PCA9685_SetPwm(uint8_t Channel, uint16_t OnTime, uint16_t OffTime
 
 	RegisterAddress = PCA9685_LED0_ON_L + (4 * Channel);
 	if(Channel <7){
+//		PCA9685_SetPwmFrequency(48);
 		uint16_t a= OffTime;
 		uint16_t tmp;
 		if(Channel ==0){tmp = curpos0; curpos0 = OffTime;}
@@ -143,6 +144,7 @@ PCA9685_STATUS PCA9685_SetPwm(uint8_t Channel, uint16_t OnTime, uint16_t OffTime
 			}
 			}
 	} else{
+//			PCA9685_SetPwmFrequency(1000);
 			Message[0] = OnTime & 0xFF;
 			Message[1] = OnTime>>8;
 			Message[2] = OffTime & 0xFF;
@@ -220,12 +222,11 @@ PCA9685_STATUS PCA9685_Init(I2C_HandleTypeDef *hi2c)
 	pca9685_i2c = hi2c;
 
 	PCA9685_SoftwareReset();
-/*#ifdef PCA9685_SERVO_MODE
+#ifdef PCA9685_SERVO_MODE
 	PCA9685_SetPwmFrequency(48);
 #else
 	PCA9685_SetPwmFrequency(1000);
-#endif*/
-	PCA9685_SetPwmFrequency(1000);
+#endif
 	PCA9685_AutoIncrement(1);
 
 	return PCA9685_OK;
