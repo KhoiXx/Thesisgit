@@ -57,7 +57,6 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -103,7 +102,17 @@ DMA_HandleTypeDef hdma_uart5_tx;
 							whfr = {.ppr = 1500, .vmax = 1.45, .vmin = -1.45, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0},
 							whbr = {.ppr = 1550, .vmax = 1.6, .vmin = -1.6, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0},
 							whbl = {.ppr = 1410, .vmax = 1.73, .vmin = -1.73, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0};
-	
+	typedef struct
+		{
+			int joint0;
+			int joint1;
+			int joint2;
+			int joint3;
+			int joint4;
+			int joint5;
+		}Jointangle;
+	Jointangle curangle = {.joint0 = 0, .joint1 = 180, .joint2 = 90, .joint3 = 60, .joint4 = 50, .joint5 = 30},
+						 posangle = {.joint0 = 0, .joint1 = 180, .joint2 = 90, .joint3 = 60, .joint4 = 50, .joint5 = 30};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -123,7 +132,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
 void inversespeed(void);
 void checkpul(float pul2check);
 void split(char in[],uint8_t out[]);
-float calspeed(int32_t value,int ppr);
+float calspeed(int32_t value,int ppr);						 
+void Rotate(int curangle, int posangle, uint8_t Channel);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -205,12 +215,12 @@ int main(void)
 	//khoi tao  Servo
 	PCA9685_SetPwmFrequency(48);
 	HAL_Delay(500);
-  PCA9685_SetServoAngle(0, 0);
-  PCA9685_SetServoAngle(1, 30);
-  PCA9685_SetServoAngle(2, 130);
-  PCA9685_SetServoAngle(3, 90);
-  PCA9685_SetServoAngle(4, 0);
-  PCA9685_SetServoAngle(5, 30);
+  PCA9685_SetServoAngle(0, curangle.joint0);
+  PCA9685_SetServoAngle(1, curangle.joint1);
+  PCA9685_SetServoAngle(2, curangle.joint2);
+  PCA9685_SetServoAngle(3, curangle.joint3);
+  PCA9685_SetServoAngle(4, curangle.joint4);
+  PCA9685_SetServoAngle(5, curangle.joint5);
 	set[0]=0;
 	set[1]=30;
 	set[2]=130;
@@ -336,16 +346,22 @@ int main(void)
 		
 		
 		/*xuat pwm cho servo robot arm*/
-		PCA9685_SetServoAngle(0, 5);
-		PCA9685_SetServoAngle(1, 180);
-		PCA9685_SetServoAngle(2, 50);
-		PCA9685_SetServoAngle(3, 50);
-//		PCA9685_SetServoAngle(4, 20);
-		PCA9685_SetServoAngle(5, 30);
-for (uint8_t Angle = 20; Angle < 30; Angle+=10) {
-		  PCA9685_SetServoAngle(4, Angle);
-			HAL_Delay(500);
-	    }
+		curangle.joint1 = 90;
+		curangle.joint2 = 0;
+		curangle.joint3 = 30;
+		curangle.joint5 = 90;
+		Rotate(curangle.joint1,posangle.joint1,0);
+		Rotate(curangle.joint1,posangle.joint1,1);
+		Rotate(curangle.joint2,posangle.joint2,2);
+		Rotate(curangle.joint3,posangle.joint3,3);
+		Rotate(curangle.joint4,posangle.joint4,4);
+		PCA9685_SetServoAngle(5,0);
+		
+		posangle = curangle;
+//for (uint8_t Angle = 20; Angle < 30; Angle+=10) {
+//		  PCA9685_SetServoAngle(4, Angle);
+//			HAL_Delay(500);
+//	    }
 		/**/
 		
 		/*xuat pwm cho 4 dong co*/
@@ -872,6 +888,31 @@ void checkpul(float pul2check){
 		pul2check = pulmax-1;
 	}else if(pul2check <-pulmax){ 
 		pul2check = -pulmax+1;
+	}
+}
+
+void Rotate(int curangle, int posangle, uint8_t Channel){
+	int anglemax = 180, anglemin = 0;
+	if(Channel == 0) anglemax = 10;
+	if(Channel == 4) anglemin = 30;
+	
+	if(curangle >anglemax) curangle = anglemax;
+	else if(curangle <anglemin) curangle = anglemin;
+	
+	if(Channel == 5) curangle =  curangle*2/3; 
+	
+	if(curangle >= posangle){
+		int tmp1;
+		for(tmp1 = posangle; tmp1 <=  curangle; tmp1++){
+			PCA9685_SetServoAngle(Channel, tmp1);
+			HAL_Delay(7);			
+		}
+	} else {
+		int tmp2;
+		for(tmp2 = posangle; tmp2 >= curangle; tmp2--){
+			PCA9685_SetServoAngle(Channel, tmp2);
+			HAL_Delay(7);
+		}
 	}
 }
 /* USER CODE END 4 */
