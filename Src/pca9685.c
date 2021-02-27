@@ -16,7 +16,6 @@
 #include "math.h"
 
 I2C_HandleTypeDef *pca9685_i2c;
-static uint16_t curpos0 = 74,curpos1 = 140,curpos2 = 359, curpos3 = 271,curpos4 = 74,curpos5 = 74;
 
 PCA9685_STATUS PCA9685_SetBit(uint8_t Register, uint8_t Bit, uint8_t Value)
 {
@@ -111,46 +110,10 @@ PCA9685_STATUS PCA9685_SetPwm(uint8_t Channel, uint16_t OnTime, uint16_t OffTime
 	uint8_t Message[4];
 
 	RegisterAddress = PCA9685_LED0_ON_L + (4 * Channel);
-	if(Channel <7){
-//		PCA9685_SetPwmFrequency(48);
-		uint16_t a= OffTime;
-		uint16_t tmp;
-		if(Channel ==0){tmp = curpos0; curpos0 = OffTime;}
-		else if(Channel ==1){tmp = curpos1; curpos1 = OffTime;}
-		else if(Channel ==2){tmp = curpos2; curpos2 = OffTime;}
-		else if(Channel ==3){tmp = curpos3; curpos3 = OffTime;}
-		else if(Channel ==4){tmp = curpos4; curpos4 = OffTime;}
-		else if(Channel ==5){tmp = curpos5; curpos5 = OffTime;}
-		if(tmp<=a){
-			for(int i=tmp; i<=a;i+=2){
-				OffTime = i;
-				Message[0] = OnTime & 0xFF;
-				Message[1] = OnTime>>8;
-				Message[2] = OffTime & 0xFF;
-				Message[3] = OffTime>>8;
-				HAL_Delay(5);
-				HAL_I2C_Mem_Write(pca9685_i2c, PCA9685_ADDRESS, RegisterAddress, 1, Message, 4, 10);
-			}
-			}
-		else{
-			for(int i=tmp; i>=a;i-=2){
-				OffTime = i;
-				Message[0] = OnTime & 0xFF;
-				Message[1] = OnTime>>8;
-				Message[2] = OffTime & 0xFF;
-				Message[3] = OffTime>>8;
-				HAL_Delay(5);
-				HAL_I2C_Mem_Write(pca9685_i2c, PCA9685_ADDRESS, RegisterAddress, 1, Message, 4, 10);
-			}
-			}
-	} else{
-//			PCA9685_SetPwmFrequency(1000);
-			Message[0] = OnTime & 0xFF;
-			Message[1] = OnTime>>8;
-			Message[2] = OffTime & 0xFF;
-			Message[3] = OffTime>>8;
-//		HAL_I2C_Mem_Write(pca9685_i2c, PCA9685_ADDRESS, RegisterAddress, 1, Message, 4, 10);
-	}
+	Message[0] = OnTime & 0xFF;
+	Message[1] = OnTime>>8;
+	Message[2] = OffTime & 0xFF;
+	Message[3] = OffTime>>8;
 
 	if(HAL_OK != HAL_I2C_Mem_Write(pca9685_i2c, PCA9685_ADDRESS, RegisterAddress, 1, Message, 4, 10))
 	{
@@ -162,10 +125,7 @@ PCA9685_STATUS PCA9685_SetPwm(uint8_t Channel, uint16_t OnTime, uint16_t OffTime
 
 PCA9685_STATUS PCA9685_SetPin(uint8_t Channel, uint16_t Value, uint8_t Invert)
 {
-//	uint16_t a = Value;
-//	for(int i =0; i<= a; i++){
-//		Value = oi
-  if(Value > 4095) Value = 4094;
+  if(Value > 4095) Value = 4095;
 
   if (Invert) {
     if (Value == 0) {
@@ -198,20 +158,11 @@ PCA9685_STATUS PCA9685_SetPin(uint8_t Channel, uint16_t Value, uint8_t Invert)
 #ifdef PCA9685_SERVO_MODE
 PCA9685_STATUS PCA9685_SetServoAngle(uint8_t Channel, float Angle)
 {
-	
 	float Value;
+	if(Angle < MIN_ANGLE) Angle = MIN_ANGLE;
+	if(Angle > MAX_ANGLE) Angle = MAX_ANGLE;
 
-/*		if(Channel ==5 ){
-			if(Angle < 0.0) Angle = 0.0;
-			if(Angle > 270.0) Angle = 270.0;
-			Value = (Angle - MIN_ANGLE) * ((float)SERVO_MAX - (float)SERVO_MIN) / (270.0 - MIN_ANGLE) + (float)SERVO_MIN;
-		}
-		else{}*/
-			if(Angle < MIN_ANGLE) Angle = MIN_ANGLE;
-			if(Angle > MAX_ANGLE) Angle = MAX_ANGLE;
-
-			Value = (Angle - MIN_ANGLE) * ((float)SERVO_MAX - (float)SERVO_MIN) / (MAX_ANGLE - MIN_ANGLE) + (float)SERVO_MIN;
-		
+	Value = (Angle - MIN_ANGLE) * ((float)SERVO_MAX - (float)SERVO_MIN) / (MAX_ANGLE - MIN_ANGLE) + (float)SERVO_MIN;
 
 	return PCA9685_SetPin(Channel, (uint16_t)Value, 0);
 }

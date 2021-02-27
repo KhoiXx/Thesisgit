@@ -84,7 +84,8 @@ DMA_HandleTypeDef hdma_uart5_tx;
 	static int32_t get_encofl = 0,get_encofr = 0,get_encobl = 0,get_encobr = 0;
 	float vvl = 0.00, vvr = 0.00;
 	float pulfl = 0, pulfr = 0, pulbr = 0, pulbl = 0;
-	
+	float pre_pulfl = 0, pre_pulfr = 0, pre_pulbr = 0, pre_pulbl = 0;
+
 	PIDControl pidfl, pidfr, pidbr, pidbl;
 	
 	typedef struct
@@ -98,10 +99,10 @@ DMA_HandleTypeDef hdma_uart5_tx;
 		float v;
 		float kp,ki,kd;
 	}Wheelselect;
-	Wheelselect whfl = {.ppr = 1500, .vmax = 0.209, .vmin = -0.209, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0},
-							whfr = {.ppr = 1500, .vmax = 0.213, .vmin = -0.213, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0},
-							whbr = {.ppr = 1550, .vmax = 0.237, .vmin = -0.237, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0},
-							whbl = {.ppr = 1410, .vmax = 0.246, .vmin = -0.246, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0};
+	Wheelselect whfl = {.ppr = 1500, .vmax = 1.45, .vmin = -1.45, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0},
+							whfr = {.ppr = 1500, .vmax = 1.45, .vmin = -1.45, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0},
+							whbr = {.ppr = 1550, .vmax = 1.6, .vmin = -1.6, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0},
+							whbl = {.ppr = 1410, .vmax = 1.73, .vmin = -1.73, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0};
 	
 /* USER CODE END PV */
 
@@ -218,11 +219,10 @@ int main(void)
 	set[5]=0;
 	
 	//khoi tao dong co
-	HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_1|TIM_CHANNEL_2|TIM_CHANNEL_3|TIM_CHANNEL_4);
-	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0);
-	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);
-	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, 0);
-	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, 0);
+	HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_1);
+	HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_2);
+	HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_3);
+	HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_4);	
 	
 	bset[0]=0;
 	bset[1]=0;
@@ -289,12 +289,17 @@ int main(void)
 			inversespeed();
 			
 			//Dat thong so PID
+//			PIDTuningsSet(&pidfl,0.08,0.02,0);
+//			PIDTuningsSet(&pidfr,0.08,0.02,0);
+//			PIDTuningsSet(&pidbr,1.4,4.02,0);
+//			PIDTuningsSet(&pidbl,0.76,40,0.0018);
 			PIDTuningsSet(&pidfl,0.08,0.02,0);
 			PIDTuningsSet(&pidfr,0.08,0.02,0);
-			PIDTuningsSet(&pidbr,1.4,4.02,0);
-			PIDTuningsSet(&pidbl,0.76,40,0.0018);
+			PIDTuningsSet(&pidbr,30,4,0);
+			PIDTuningsSet(&pidbl,7,2,0.003);
 			
-			vvl = 0.07;
+			vvl = 1.4;
+			vvr = 1.4;
 			
 			//PID for Front Left Wheel
 			PIDInputSet(&pidfl,whfl.v);
@@ -316,6 +321,7 @@ int main(void)
 			PIDCompute(&pidbr);
 			pulbr=PIDOutputGet(&pidbr)/(whbr.vmax)*(pulmax-pulmin)+pulmin;
 			checkpul(pulbr);
+			
 
 			//PID for Back Left Wheel
 			PIDInputSet(&pidbl,whbl.v);
@@ -326,54 +332,53 @@ int main(void)
 //			else{pidbl.output = 0;}
 			pulbl=PIDOutputGet(&pidbl)/(whbl.vmax)*(pulmax-pulmin)+pulmin;
 			checkpul(pulbl);
-
-
-
 		}
 		
-//		for (uint8_t Angle = 0; Angle < 180; Angle+=5) {
-//		  PCA9685_SetServoAngle(5, Angle);
-//			HAL_Delay(1000);
-//	    }
+		
 		/*xuat pwm cho servo robot arm*/
-		PCA9685_SetPwmFrequency(48);
-		PCA9685_SetServoAngle(0, 1);
+		PCA9685_SetServoAngle(0, 5);
 		PCA9685_SetServoAngle(1, 180);
-		PCA9685_SetServoAngle(2, 80);
-		PCA9685_SetServoAngle(3, 60);
-		PCA9685_SetServoAngle(4, 20);
-		PCA9685_SetServoAngle(5, 150);
-
+		PCA9685_SetServoAngle(2, 50);
+		PCA9685_SetServoAngle(3, 50);
+//		PCA9685_SetServoAngle(4, 20);
+		PCA9685_SetServoAngle(5, 30);
+for (uint8_t Angle = 20; Angle < 30; Angle+=10) {
+		  PCA9685_SetServoAngle(4, Angle);
+			HAL_Delay(500);
+	    }
 		/**/
 		
 		/*xuat pwm cho 4 dong co*/
-//		PCA9685_SetPwmFrequency(1000);
+
+//		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 1800	);
+//		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_7,GPIO_PIN_RESET);
+//		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1,(uint16_t)__fabs(pulfl));
+//		if(pulfl >= 0){
+//			HAL_GPIO_WritePin(GPIOC,GPIO_PIN_7,GPIO_PIN_RESET);
+//		}else HAL_GPIO_WritePin(GPIOC,GPIO_PIN_7,GPIO_PIN_SET);
 		
-		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0);
-//		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, (uint16_t)__fabs(pulfl));
-		if(pulfl >= 0){
-			HAL_GPIO_WritePin(GPIOC,GPIO_PIN_7,GPIO_PIN_RESET);
-		}else HAL_GPIO_WritePin(GPIOC,GPIO_PIN_7,GPIO_PIN_SET);
-		
-		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0);
+//		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 1800);
+//		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_9,GPIO_PIN_RESET);
 //		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, (uint16_t)__fabs(pulfr));
-		if(pulfr >= 0){
-			HAL_GPIO_WritePin(GPIOC,GPIO_PIN_9,GPIO_PIN_RESET);
-	  }else HAL_GPIO_WritePin(GPIOC,GPIO_PIN_9,GPIO_PIN_SET);
+//		if(pulfr >= 0){
+//			HAL_GPIO_WritePin(GPIOC,GPIO_PIN_9,GPIO_PIN_RESET);
+//	  }else HAL_GPIO_WritePin(GPIOC,GPIO_PIN_9,GPIO_PIN_SET);
 		
-		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, 0);
-//		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, (uint16_t)__fabs(pulbr));
-		if(pulbr >= 0){
-			HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_RESET);
-		}else HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_SET);
-		
-		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, 0);
-//		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, (uint16_t)__fabs(pulbl));
-		if(pulbl >= 0){
-			HAL_GPIO_WritePin(GPIOC,GPIO_PIN_11,GPIO_PIN_RESET);
-    }else HAL_GPIO_WritePin(GPIOC,GPIO_PIN_11,GPIO_PIN_SET);
+//		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, (uint16_t)__fabs(pulbr));
+//		if(pulbr >= 0){
+//			HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_RESET);
+//		}else HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_SET);
+
+//		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, (uint16_t)__fabs(pulbl));
+//		if(pulbl >= 0){
+//			HAL_GPIO_WritePin(GPIOC,GPIO_PIN_11,GPIO_PIN_RESET);
+//    }else HAL_GPIO_WritePin(GPIOC,GPIO_PIN_11,GPIO_PIN_SET);
 		/**/
 		
+		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, 0);
+		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_11,GPIO_PIN_RESET);
+		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, 0);
+		HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_RESET);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -486,11 +491,11 @@ static void MX_TIM1_Init(void)
   sConfig.IC1Polarity = TIM_ICPOLARITY_FALLING;
   sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
   sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC1Filter = 0;
+  sConfig.IC1Filter = 1;
   sConfig.IC2Polarity = TIM_ICPOLARITY_FALLING;
   sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
   sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC2Filter = 0;
+  sConfig.IC2Filter = 1;
   if (HAL_TIM_Encoder_Init(&htim1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -527,7 +532,7 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 1;
+  htim2.Init.Prescaler = 0;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim2.Init.Period = 3599;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -606,11 +611,11 @@ static void MX_TIM3_Init(void)
   sConfig.IC1Polarity = TIM_ICPOLARITY_FALLING;
   sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
   sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC1Filter = 0;
+  sConfig.IC1Filter = 1;
   sConfig.IC2Polarity = TIM_ICPOLARITY_FALLING;
   sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
   sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC2Filter = 0;
+  sConfig.IC2Filter = 1;
   if (HAL_TIM_Encoder_Init(&htim3, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -655,11 +660,11 @@ static void MX_TIM4_Init(void)
   sConfig.IC1Polarity = TIM_ICPOLARITY_FALLING;
   sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
   sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC1Filter = 0;
+  sConfig.IC1Filter = 1;
   sConfig.IC2Polarity = TIM_ICPOLARITY_FALLING;
   sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
   sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC2Filter = 0;
+  sConfig.IC2Filter = 1;
   if (HAL_TIM_Encoder_Init(&htim4, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -704,11 +709,11 @@ static void MX_TIM5_Init(void)
   sConfig.IC1Polarity = TIM_ICPOLARITY_FALLING;
   sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
   sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC1Filter = 0;
+  sConfig.IC1Filter = 1;
   sConfig.IC2Polarity = TIM_ICPOLARITY_FALLING;
   sConfig.IC2Selection = TIM_ICSELECTION_DIRECTTI;
   sConfig.IC2Prescaler = TIM_ICPSC_DIV1;
-  sConfig.IC2Filter = 0;
+  sConfig.IC2Filter = 1;
   if (HAL_TIM_Encoder_Init(&htim5, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -843,7 +848,7 @@ float calspeed(int32_t value,  int ppr)
 {
 	float 	p = 0.00, v = 0.00;
 	
-	p = (float)value*(1.00/ppr)*(1000.00/5.00); //rpm
+	p = (float)value*(1.00/ppr)*(1000.00/5.00)*60; //rpm
 	v = radius*2.00*3.1416*p*(1.00/60.00); // m/s
 	return v;
 }
