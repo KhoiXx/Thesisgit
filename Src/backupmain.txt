@@ -44,6 +44,9 @@
 #define SERVO_Motor1   0
 #define SERVO_COUNT	6
 #define BS 29
+#define pprf 1500.00
+#define pprbl 1410.00
+#define pprbr 1550.00
 #define radius 0.039
 #define len 0.21 
 //#define vmax 30.00
@@ -76,9 +79,11 @@ DMA_HandleTypeDef hdma_uart5_tx;
 	static uint8_t set[7],bset[4];
 	/**/
 	char* i;
-	int j=600;
+	int j=0;
+	static int32_t get_encofl = 0,get_encofr = 0,get_encobl = 0,get_encobr = 0;
 	float vvl = 0.00, vvr = 0.00;
 	float pulfl = 0, pulfr = 0, pulbr = 0, pulbl = 0;
+	float pre_pulfl = 0, pre_pulfr = 0, pre_pulbr = 0, pre_pulbl = 0;
 
 	PIDControl pidfl, pidfr, pidbr, pidbl;
 	
@@ -93,10 +98,10 @@ DMA_HandleTypeDef hdma_uart5_tx;
 		float v;
 		float kp,ki,kd;
 	}Wheelselect;
-	Wheelselect whfl = {.ppr = 1530, .vmax = 1.45, .vmin = -1.45, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0},
-							whfr = {.ppr = 1530, .vmax = 1.45, .vmin = -1.45, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0},
-							whbr = {.ppr = 765, .vmax = 1.6, .vmin = -1.6, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0},
-							whbl = {.ppr = 1530, .vmax = 1.73, .vmin = -1.73, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0};
+	Wheelselect whfl = {.ppr = 1500, .vmax = 1.45, .vmin = -1.45, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0},
+							whfr = {.ppr = 1500, .vmax = 1.45, .vmin = -1.45, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0},
+							whbr = {.ppr = 1550, .vmax = 1.6, .vmin = -1.6, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0},
+							whbl = {.ppr = 1410, .vmax = 1.73, .vmin = -1.73, .enco = 0, .enco_pre = 0, .vset=0.00, .v=0.00, .kp=0, .ki=0, .kd=0};
 	typedef struct
 		{
 			int joint0;
@@ -121,9 +126,7 @@ static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
 static void MX_TIM5_Init(void);
 static void MX_UART5_Init(void);
-						 
 /* USER CODE BEGIN PFP */
-						 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart);
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
 void inversespeed(void);
@@ -131,7 +134,6 @@ void checkpul(float pul2check);
 void split(char in[],uint8_t out[]);
 float calspeed(int32_t value,int ppr);						 
 void Rotate(int curangle, int posangle, uint8_t Channel);
-
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -176,6 +178,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+	volatile short encoder = 0;
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -184,6 +188,8 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
+	HAL_GPIO_WritePin(GPIOC,GPIO_PIN_13,GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOC,GPIO_PIN_14,GPIO_PIN_RESET);
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -209,7 +215,19 @@ int main(void)
 	//khoi tao  Servo
 	PCA9685_SetPwmFrequency(48);
 	HAL_Delay(500);
-
+  PCA9685_SetServoAngle(0, curangle.joint0);
+  PCA9685_SetServoAngle(1, curangle.joint1);
+  PCA9685_SetServoAngle(2, curangle.joint2);
+  PCA9685_SetServoAngle(3, curangle.joint3);
+  PCA9685_SetServoAngle(4, curangle.joint4);
+  PCA9685_SetServoAngle(5, curangle.joint5);
+	set[0]=0;
+	set[1]=30;
+	set[2]=130;
+	set[3]=90;
+	set[4]=0;
+	set[5]=0;
+	
 	//khoi tao dong co
 	HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_2);
@@ -234,6 +252,7 @@ int main(void)
 	static float temp1;
   /* USER CODE END 2 */
 
+
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
@@ -247,10 +266,10 @@ int main(void)
 			whbr.enco = (int16_t)__HAL_TIM_GET_COUNTER(&htim3);
 			whbl.enco = (int16_t)__HAL_TIM_GET_COUNTER(&htim4);
 			
-			__HAL_TIM_SET_COUNTER(&htim1,0);
-			__HAL_TIM_SET_COUNTER(&htim5,0);
-			__HAL_TIM_SET_COUNTER(&htim3,0);
-			__HAL_TIM_SET_COUNTER(&htim4,0);
+//			__HAL_TIM_SET_COUNTER(&htim1,0);
+//			__HAL_TIM_SET_COUNTER(&htim5,0);
+//			__HAL_TIM_SET_COUNTER(&htim3,0);
+//			__HAL_TIM_SET_COUNTER(&htim4,0);
 			
 			//xu li chuoi nhan
 			if(strchr(data_rx,'S') != NULL){
@@ -329,6 +348,7 @@ int main(void)
 		
 		/*xuat pwm cho 4 dong co*/
 
+
 //		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1,(uint16_t)__fabs(pulfl));
 //		if(pulfl >= 0){
 //			HAL_GPIO_WritePin(GPIOC,GPIO_PIN_7,GPIO_PIN_RESET);
@@ -350,12 +370,11 @@ int main(void)
 //			HAL_GPIO_WritePin(GPIOC,GPIO_PIN_11,GPIO_PIN_RESET);
 //    }else HAL_GPIO_WritePin(GPIOC,GPIO_PIN_11,GPIO_PIN_SET);
 
-		if(j <3500) j+=5;
 		
-		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, j);
+		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 3200);
 		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_7,GPIO_PIN_RESET);
 		
-		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, j);
+		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 3200);
 		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_9,GPIO_PIN_RESET);
 		
 		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, 1000);
@@ -364,7 +383,26 @@ int main(void)
 		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, 1000);
 		HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_RESET);
 		/**/
-		HAL_Delay(300);
+		
+		
+		/*xuat pwm cho servo robot arm*/
+//		curangle.joint1 = 90;
+//		curangle.joint2 = 0;
+//		curangle.joint3 = 30;
+//		curangle.joint5 = 90;
+//		Rotate(curangle.joint1,posangle.joint1,0);
+//		Rotate(curangle.joint1,posangle.joint1,1);
+//		Rotate(curangle.joint2,posangle.joint2,2);
+//		Rotate(curangle.joint3,posangle.joint3,3);
+//		Rotate(curangle.joint4,posangle.joint4,4);
+//		PCA9685_SetServoAngle(5,0);
+		
+//		posangle = curangle;
+//for (uint8_t Angle = 20; Angle < 30; Angle+=10) {
+//		  PCA9685_SetServoAngle(4, Angle);
+//			HAL_Delay(500);
+//	    }
+		/**/
 		
     /* USER CODE END WHILE */
 
