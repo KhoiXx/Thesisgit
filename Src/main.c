@@ -252,6 +252,7 @@ int main(void)
 	static float temp1;
   /* USER CODE END 2 */
 
+
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
@@ -265,10 +266,10 @@ int main(void)
 			whbr.enco = (int16_t)__HAL_TIM_GET_COUNTER(&htim3);
 			whbl.enco = (int16_t)__HAL_TIM_GET_COUNTER(&htim4);
 			
-			__HAL_TIM_SET_COUNTER(&htim1,0);
-			__HAL_TIM_SET_COUNTER(&htim5,0);
-			__HAL_TIM_SET_COUNTER(&htim3,0);
-			__HAL_TIM_SET_COUNTER(&htim4,0);
+//			__HAL_TIM_SET_COUNTER(&htim1,0);
+//			__HAL_TIM_SET_COUNTER(&htim5,0);
+//			__HAL_TIM_SET_COUNTER(&htim3,0);
+//			__HAL_TIM_SET_COUNTER(&htim4,0);
 			
 			//xu li chuoi nhan
 			if(strchr(data_rx,'S') != NULL){
@@ -343,38 +344,17 @@ int main(void)
 			pulbl=PIDOutputGet(&pidbl)/(whbl.vmax)*(pulmax-pulmin)+pulmin;
 			checkpul(pulbl);
 		}
-		
-		
-		/*xuat pwm cho servo robot arm*/
-		curangle.joint1 = 90;
-		curangle.joint2 = 0;
-		curangle.joint3 = 30;
-		curangle.joint5 = 90;
-		Rotate(curangle.joint1,posangle.joint1,0);
-		Rotate(curangle.joint1,posangle.joint1,1);
-		Rotate(curangle.joint2,posangle.joint2,2);
-		Rotate(curangle.joint3,posangle.joint3,3);
-		Rotate(curangle.joint4,posangle.joint4,4);
-		PCA9685_SetServoAngle(5,0);
-		
-		posangle = curangle;
-//for (uint8_t Angle = 20; Angle < 30; Angle+=10) {
-//		  PCA9685_SetServoAngle(4, Angle);
-//			HAL_Delay(500);
-//	    }
-		/**/
+
 		
 		/*xuat pwm cho 4 dong co*/
 
-//		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 1800	);
-//		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_7,GPIO_PIN_RESET);
+
 //		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1,(uint16_t)__fabs(pulfl));
 //		if(pulfl >= 0){
 //			HAL_GPIO_WritePin(GPIOC,GPIO_PIN_7,GPIO_PIN_RESET);
 //		}else HAL_GPIO_WritePin(GPIOC,GPIO_PIN_7,GPIO_PIN_SET);
 		
-//		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 1800);
-//		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_9,GPIO_PIN_RESET);
+
 //		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, (uint16_t)__fabs(pulfr));
 //		if(pulfr >= 0){
 //			HAL_GPIO_WritePin(GPIOC,GPIO_PIN_9,GPIO_PIN_RESET);
@@ -389,12 +369,41 @@ int main(void)
 //		if(pulbl >= 0){
 //			HAL_GPIO_WritePin(GPIOC,GPIO_PIN_11,GPIO_PIN_RESET);
 //    }else HAL_GPIO_WritePin(GPIOC,GPIO_PIN_11,GPIO_PIN_SET);
+
+		
+		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 3200);
+		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_7,GPIO_PIN_RESET);
+		
+		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 3200);
+		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_9,GPIO_PIN_RESET);
+		
+		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, 1000);
+		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_11,GPIO_PIN_RESET);
+		
+		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, 1000);
+		HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_RESET);
 		/**/
 		
-		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, 0);
-		HAL_GPIO_WritePin(GPIOC,GPIO_PIN_11,GPIO_PIN_RESET);
-		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, 0);
-		HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_RESET);
+		
+		/*xuat pwm cho servo robot arm*/
+//		curangle.joint1 = 90;
+//		curangle.joint2 = 0;
+//		curangle.joint3 = 30;
+//		curangle.joint5 = 90;
+//		Rotate(curangle.joint1,posangle.joint1,0);
+//		Rotate(curangle.joint1,posangle.joint1,1);
+//		Rotate(curangle.joint2,posangle.joint2,2);
+//		Rotate(curangle.joint3,posangle.joint3,3);
+//		Rotate(curangle.joint4,posangle.joint4,4);
+//		PCA9685_SetServoAngle(5,0);
+		
+//		posangle = curangle;
+//for (uint8_t Angle = 20; Angle < 30; Angle+=10) {
+//		  PCA9685_SetServoAngle(4, Angle);
+//			HAL_Delay(500);
+//	    }
+		/**/
+		
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
